@@ -1,5 +1,7 @@
 # cursor-better-feedback
 
+English | [中文](README_CN.md)
+
 MCP feedback tool with interactive UI for [Cursor](https://cursor.com). Replaces the built-in AskQuestion with a more robust feedback mechanism using [MCP Apps](https://modelcontextprotocol.io).
 
 | Waiting for feedback | After submission |
@@ -61,6 +63,43 @@ Or use a local path:
 3. User types feedback and clicks Submit (or presses `Ctrl+Enter`)
 4. The UI calls `submit_feedback` to resolve the pending tool call
 5. The LLM receives the feedback text and continues
+
+## Recommended Cursor Rule
+
+Add this rule to `.cursor/rules/feedback.mdc` to enforce feedback-driven interaction with automatic retry:
+
+```markdown
+---
+description: "Feedback MCP interaction protocol with resilience"
+globs:
+alwaysApply: true
+---
+
+# Feedback Interaction Protocol
+
+## Interaction Rules (Mandatory)
+
+- **MUST** use `feedback` tool for confirmations/choices — never use plain text questions
+- During discussion: natural language only, no large code blocks (pseudocode/minimal snippets OK)
+- When information is unclear or missing: ask the user immediately, never assume
+
+## End of Turn (Mandatory)
+
+After every response, **MUST** call `feedback`: "还有其他需要吗？你也可以直接输入下一个指令。"
+- If user says "end" / "done" / "no more" → end conversation
+- Otherwise → treat response as next instruction
+- **Only exception**: user already explicitly ended this turn
+
+## Resilience
+
+1. Always call `feedback` tool first
+2. If `Tool not found` or connection error:
+   - Sleep 5 seconds, retry up to **3 times**
+3. All retries failed → fall back to built-in `AskQuestion`
+
+Network fluctuations may cause Cursor to temporarily disconnect MCP servers.
+The feedback server (stdio) itself is unaffected; Cursor auto-reconnects after recovery.
+```
 
 ## Limitations
 
