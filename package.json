@@ -1,6 +1,6 @@
 {
   "name": "cursor-better-feedback",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "MCP feedback tool with interactive UI for Cursor",
   "keywords": [
@@ -12,6 +12,11 @@
     "ai-tools"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ming-321/cursor-better-feedback.git"
+  },
+  "homepage": "https://github.com/Ming-321/cursor-better-feedback#readme",
   "engines": {
     "node": ">=18"
   },

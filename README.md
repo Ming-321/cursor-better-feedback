@@ -4,7 +4,7 @@ MCP feedback tool with interactive UI for [Cursor](https://cursor.com). Replaces
 
 | Waiting for feedback | After submission |
 |:---:|:---:|
-| ![Before](figures/feedback-before.png) | ![After](figures/feedback-after.png) |
+| ![Before](https://raw.githubusercontent.com/Ming-321/cursor-better-feedback/master/figures/feedback-before.png) | ![After](https://raw.githubusercontent.com/Ming-321/cursor-better-feedback/master/figures/feedback-after.png) |
 
 ## Features
 
