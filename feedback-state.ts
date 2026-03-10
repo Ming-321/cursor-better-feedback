@@ -1,14 +1,25 @@
+export interface FeedbackImage {
+  name: string;
+  data: string;
+  mimeType: string;
+}
+
+export interface FeedbackResult {
+  text: string;
+  images?: FeedbackImage[];
+}
+
 export class FeedbackState {
   private current: {
-    resolve: (text: string) => void;
+    resolve: (result: FeedbackResult) => void;
     reject: (err: Error) => void;
     timer: NodeJS.Timeout;
     cleanup: () => void;
   } | null = null;
 
-  waitForFeedback(timeoutMs: number, signal?: AbortSignal): Promise<string> {
+  waitForFeedback(timeoutMs: number, signal?: AbortSignal): Promise<FeedbackResult> {
     this.cancelPending("New feedback request received");
-    return new Promise<string>((resolve, reject) => {
+    return new Promise<FeedbackResult>((resolve, reject) => {
       if (signal?.aborted) {
         reject(new Error("Aborted"));
         return;
@@ -35,9 +46,9 @@ export class FeedbackState {
       };
 
       this.current = {
-        resolve: (text: string) => {
+        resolve: (result: FeedbackResult) => {
           settle();
-          resolve(text);
+          resolve(result);
         },
         reject: (err: Error) => {
           settle();
@@ -49,10 +60,10 @@ export class FeedbackState {
     });
   }
 
-  submitFeedback(text: string): boolean {
-    const trimmed = text.trim();
+  submitFeedback(result: FeedbackResult): boolean {
+    const trimmed = result.text.trim();
     if (!trimmed || !this.current) return false;
-    this.current.resolve(trimmed);
+    this.current.resolve({ text: trimmed, images: result.images });
     return true;
   }
 

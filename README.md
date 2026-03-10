@@ -11,6 +11,7 @@ MCP feedback tool with interactive UI for [Cursor](https://cursor.com). Replaces
 ## Features
 
 - Interactive feedback UI rendered directly in the Cursor chat panel (via MCP Apps iframe)
+- **Image paste**: `Ctrl+V` to attach screenshots (PNG/JPEG/WebP/GIF, up to 5 images, 5MB each)
 - Markdown rendering in message area (raw HTML stripped for security)
 - Configurable timeout and font size via environment variables
 - Host theme/style adaptation
@@ -60,9 +61,10 @@ Or use a local path:
 
 1. The LLM calls `feedback(message="...")` when it needs user input
 2. Cursor renders the feedback UI in an iframe (MCP Apps)
-3. User types feedback and clicks Submit (or presses `Ctrl+Enter`)
-4. The UI calls `submit_feedback` to resolve the pending tool call
-5. The LLM receives the feedback text and continues
+3. User types feedback, optionally pastes images with `Ctrl+V`
+4. User clicks Submit (or presses `Ctrl+Enter`)
+5. The UI calls `submit_feedback` to resolve the pending tool call
+6. The LLM receives the feedback text (and any attached images) and continues
 
 ## Recommended Cursor Rule
 

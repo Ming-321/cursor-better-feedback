@@ -11,6 +11,7 @@
 ## 功能特性
 
 - 交互式反馈 UI，直接渲染在 Cursor 聊天面板中（MCP Apps iframe）
+- **图片粘贴**：`Ctrl+V` 附加截图（支持 PNG/JPEG/WebP/GIF，最多 5 张，每张 5MB）
 - 消息区域支持 Markdown 渲染（原始 HTML 已过滤 + DOMPurify 双层安全防护）
 - 超时时间和字体大小可通过环境变量配置
 - 自动适配宿主主题/样式
@@ -60,9 +61,10 @@
 
 1. LLM 在需要用户输入时调用 `feedback(message="...")`
 2. Cursor 在 iframe 中渲染反馈 UI（MCP Apps）
-3. 用户输入反馈并点击提交（或按 `Ctrl+Enter`）
-4. UI 调用 `submit_feedback` 解决挂起的工具调用
-5. LLM 收到反馈文本，继续执行
+3. 用户输入反馈，可选使用 `Ctrl+V` 粘贴截图
+4. 点击提交（或按 `Ctrl+Enter`）
+5. UI 调用 `submit_feedback` 解决挂起的工具调用
+6. LLM 收到反馈文本（及附带的图片），继续执行
 
 ## 推荐 Cursor 规则
 

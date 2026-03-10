@@ -39,6 +39,25 @@ function sanitizeHtml(dirty: string): string {
   });
 }
 
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const MAX_IMAGES = 5;
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+]);
+const DATA_URL_RE = /^data:(image\/[a-z+]+);base64,([A-Za-z0-9+/]+=*)$/;
+
+interface PendingImage {
+  name: string;
+  data: string;
+  mimeType: string;
+  dataUrl: string;
+}
+
+const pendingImages: PendingImage[] = [];
+
 const mainEl = document.getElementById("main") as HTMLElement;
 const aiMessageEl = document.getElementById("ai-message")!;
 const feedbackInput = document.getElementById(
@@ -47,11 +66,37 @@ const feedbackInput = document.getElementById(
 const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
 const statusArea = document.getElementById("status-area") as HTMLDivElement;
 const statusText = document.getElementById("status-text")!;
+const imagePreview = document.getElementById(
+  "image-preview",
+) as HTMLDivElement;
 
 function showStatus(msg: string, type: "success" | "error" | "warning") {
   statusText.textContent = msg;
   statusArea.hidden = false;
   statusArea.className = `status-area status-${type}`;
+}
+
+function renderImagePreview() {
+  imagePreview.innerHTML = "";
+  imagePreview.hidden = pendingImages.length === 0;
+  pendingImages.forEach((img, i) => {
+    const item = document.createElement("div");
+    item.className = "image-preview-item";
+    const imgEl = document.createElement("img");
+    imgEl.src = img.dataUrl;
+    imgEl.alt = img.name;
+    item.appendChild(imgEl);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "remove-btn";
+    btn.textContent = "\u00d7";
+    btn.addEventListener("click", () => {
+      pendingImages.splice(i, 1);
+      renderImagePreview();
+    });
+    item.appendChild(btn);
+    imagePreview.appendChild(item);
+  });
 }
 
 function resetUI() {
@@ -61,6 +106,8 @@ function resetUI() {
   submitBtn.textContent = "Submit Feedback";
   submitBtn.classList.remove("btn-success");
   statusArea.hidden = true;
+  pendingImages.length = 0;
+  renderImagePreview();
 }
 
 function applyHostContext(ctx: McpUiHostContext) {
@@ -103,6 +150,55 @@ app.onerror = console.error;
 app.onhostcontextchanged = applyHostContext;
 app.onteardown = async () => ({});
 
+feedbackInput.addEventListener("paste", (e) => {
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (!item.type.startsWith("image/")) continue;
+    if (!ALLOWED_IMAGE_TYPES.has(item.type)) {
+      showStatus("Unsupported image format", "warning");
+      continue;
+    }
+    e.preventDefault();
+    const file = item.getAsFile();
+    if (!file) continue;
+    if (file.size > MAX_IMAGE_SIZE) {
+      showStatus(
+        `Image too large (${(file.size / 1024 / 1024).toFixed(1)}MB > 5MB)`,
+        "warning",
+      );
+      continue;
+    }
+    if (pendingImages.length >= MAX_IMAGES) {
+      showStatus(`Maximum ${MAX_IMAGES} images`, "warning");
+      continue;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (pendingImages.length >= MAX_IMAGES) return;
+      const raw = reader.result;
+      if (typeof raw !== "string") return;
+      const match = raw.match(DATA_URL_RE);
+      if (!match) return;
+      const mimeType = match[1];
+      const base64 = match[2];
+      if (!ALLOWED_IMAGE_TYPES.has(mimeType) || !base64) return;
+      pendingImages.push({
+        name:
+          file.name || `image-${Date.now()}.${mimeType.split("/")[1] || "png"}`,
+        data: base64,
+        mimeType,
+        dataUrl: raw,
+      });
+      renderImagePreview();
+    };
+    reader.onerror = () => {
+      showStatus("Failed to read image", "error");
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
 submitBtn.addEventListener("click", async () => {
   const text = feedbackInput.value.trim();
   if (!text) return;
@@ -111,12 +207,22 @@ submitBtn.addEventListener("click", async () => {
   submitBtn.textContent = "Submitting...";
 
   try {
+    const args: Record<string, unknown> = { text };
+    if (pendingImages.length > 0) {
+      args.images = pendingImages.map(({ name, data, mimeType }) => ({
+        name,
+        data,
+        mimeType,
+      }));
+    }
     const result = await app.callServerTool({
       name: "submit_feedback",
-      arguments: { text },
+      arguments: args,
     });
     const sc = result?.structuredContent as Record<string, unknown> | undefined;
     if (sc?.success === true) {
+      pendingImages.length = 0;
+      renderImagePreview();
       submitBtn.disabled = true;
       submitBtn.textContent = "Success";
       submitBtn.classList.add("btn-success");

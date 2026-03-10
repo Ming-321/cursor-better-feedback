@@ -13,6 +13,23 @@ import path from "node:path";
 import { z } from "zod";
 import { FeedbackState } from "./feedback-state.js";
 
+const ALLOWED_MIME_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+]);
+const MAX_IMAGE_COUNT = 5;
+const MAX_IMAGE_BYTES = 7 * 1024 * 1024;
+
+const feedbackImageSchema = z.object({
+  name: z.string().max(256),
+  data: z.string().max(MAX_IMAGE_BYTES),
+  mimeType: z.string().refine((v) => ALLOWED_MIME_TYPES.has(v), {
+    message: "Unsupported image type",
+  }),
+});
+
 const DIST_DIR = import.meta.filename.endsWith(".ts")
   ? path.join(import.meta.dirname, "dist")
   : import.meta.dirname;
@@ -62,13 +79,25 @@ function registerTools(server: McpServer, state: FeedbackState): void {
     },
     async ({ message, timeout }, extra): Promise<CallToolResult> => {
       try {
-        const feedback = await state.waitForFeedback(
+        const result = await state.waitForFeedback(
           timeout * 1000,
           (extra as { signal?: AbortSignal } | undefined)?.signal,
         );
+        const content: CallToolResult["content"] = [
+          { type: "text", text: result.text },
+        ];
+        if (result.images?.length) {
+          for (const img of result.images) {
+            content.push({
+              type: "image",
+              data: img.data,
+              mimeType: img.mimeType,
+            });
+          }
+        }
         return {
-          content: [{ type: "text", text: feedback }],
-          structuredContent: { message, feedback },
+          content,
+          structuredContent: { message, feedback: result.text },
         };
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Unknown error";
@@ -95,20 +124,21 @@ function registerTools(server: McpServer, state: FeedbackState): void {
           .min(1, "Feedback text must not be empty")
           .describe("User feedback text"),
         images: z
-          .array(
-            z.object({
-              name: z.string(),
-              data: z.string(),
-              mimeType: z.string(),
-            }),
-          )
+          .array(feedbackImageSchema)
+          .max(MAX_IMAGE_COUNT)
           .optional()
-          .describe("Optional images (reserved for future use)"),
+          .describe("Optional attached images"),
       },
       _meta: { ui: { resourceUri: RESOURCE_URI, visibility: ["app"] } },
     },
-    async ({ text }): Promise<CallToolResult> => {
-      const ok = state.submitFeedback(text as string);
+    async ({ text, images }): Promise<CallToolResult> => {
+      const validImages = Array.isArray(images) && images.length > 0
+        ? (images as Array<{ name: string; data: string; mimeType: string }>)
+        : undefined;
+      const ok = state.submitFeedback({
+        text: text as string,
+        images: validImages,
+      });
       return {
         content: [
           {
