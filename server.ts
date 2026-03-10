@@ -33,7 +33,10 @@ const DEFAULT_TIMEOUT = Math.max(
   Math.min(3600, parseInt(process.env.FEEDBACK_TIMEOUT ?? "1200", 10) || 1200),
 );
 
-const FONT_SIZE = process.env.FEEDBACK_FONT_SIZE ?? "12px";
+const RAW_FONT_SIZE = process.env.FEEDBACK_FONT_SIZE ?? "12px";
+const FONT_SIZE = /^[\d.]+(px|rem|em|pt|%)$/.test(RAW_FONT_SIZE)
+  ? RAW_FONT_SIZE
+  : "12px";
 
 const timeoutSchema = z
   .number()

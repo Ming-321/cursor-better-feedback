@@ -3,29 +3,46 @@
   "version": "0.1.0",
   "type": "module",
   "description": "MCP feedback tool with interactive UI for Cursor",
+  "keywords": [
+    "mcp",
+    "cursor",
+    "feedback",
+    "mcp-apps",
+    "interactive",
+    "ai-tools"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
   "main": "dist/server.js",
   "bin": {
     "cursor-better-feedback": "dist/main.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "LICENSE",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc --noEmit && cross-env INPUT=mcp-app.html vite build && tsc -p tsconfig.server.json",
     "serve": "npx tsx main.ts",
-    "serve:stdio": "npx tsx main.ts --stdio",
-    "dev": "cross-env NODE_ENV=development concurrently \"cross-env INPUT=mcp-app.html vite build --watch\" \"npx tsx --watch main.ts\""
+    "serve:http": "npx tsx main.ts --http",
+    "dev": "cross-env NODE_ENV=development concurrently \"cross-env INPUT=mcp-app.html vite build --watch\" \"npx tsx --watch main.ts --http\"",
+    "prepack": "npm run build"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.0.0",
     "@modelcontextprotocol/sdk": "^1.24.0",
     "cors": "^2.8.5",
+    "dompurify": "^3.3.2",
     "express": "^5.1.0",
     "marked": "^17.0.4",
     "zod": "^4.1.13"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
+    "@types/dompurify": "^3.0.5",
     "@types/express": "^5.0.0",
     "@types/marked": "^5.0.2",
     "@types/node": "22.10.0",
@@ -35,6 +52,5 @@
     "typescript": "^5.9.3",
     "vite": "^6.0.0",
     "vite-plugin-singlefile": "^2.3.0"
-  },
-  "license": "MIT"
+  }
 }

@@ -5,12 +5,39 @@ import {
   applyHostFonts,
   type McpUiHostContext,
 } from "@modelcontextprotocol/ext-apps";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import DOMPurify from "dompurify";
 import { marked } from "marked";
 import "./global.css";
 import "./mcp-app.css";
 
-marked.setOptions({ breaks: true, gfm: true });
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+  async: false,
+});
+marked.use({
+  renderer: { html: () => "" },
+});
+
+const purify = DOMPurify(window);
+purify.addHook("afterSanitizeAttributes", (node) => {
+  if (node.tagName === "A") {
+    node.setAttribute("target", "_blank");
+    node.setAttribute("rel", "noopener noreferrer");
+  }
+});
+
+function sanitizeHtml(dirty: string): string {
+  return purify.sanitize(dirty, {
+    ALLOWED_TAGS: [
+      "p", "br", "strong", "em", "del", "code", "pre",
+      "ul", "ol", "li", "blockquote", "a",
+      "h1", "h2", "h3", "h4", "h5", "h6",
+    ],
+    ALLOWED_ATTR: ["href"],
+    ALLOWED_URI_REGEXP: /^(?:https?|mailto):/i,
+  });
+}
 
 const mainEl = document.getElementById("main") as HTMLElement;
 const aiMessageEl = document.getElementById("ai-message")!;
@@ -52,13 +79,7 @@ const app = new App({ name: "Cursor Better Feedback", version: "0.1.0" });
 const MSG_PREFIX = "\u{1F916}: ";
 
 function renderMessage(text: string) {
-  const raw = MSG_PREFIX + text;
-  const html = marked.parse(raw);
-  if (typeof html === "string") {
-    aiMessageEl.innerHTML = html;
-  } else {
-    html.then((h) => { aiMessageEl.innerHTML = h; });
-  }
+  aiMessageEl.innerHTML = sanitizeHtml(marked.parse(MSG_PREFIX + text) as string);
 }
 
 app.ontoolinput = (params) => {
@@ -72,19 +93,7 @@ app.ontoolinputpartial = (params) => {
   if (message) renderMessage(message);
 };
 
-app.ontoolresult = (result: CallToolResult) => {
-  const success = (result.structuredContent as { success?: boolean })?.success;
-  if (success === false) {
-    showStatus("No pending feedback session", "warning");
-    submitBtn.disabled = false;
-    submitBtn.textContent = "Submit Feedback";
-    return;
-  }
-  submitBtn.disabled = true;
-  submitBtn.textContent = "Success";
-  submitBtn.classList.add("btn-success");
-  feedbackInput.disabled = true;
-};
+app.ontoolresult = () => {};
 
 app.ontoolcancelled = (params) => {
   showStatus(`Feedback cancelled: ${params.reason ?? "unknown"}`, "warning");
@@ -102,10 +111,21 @@ submitBtn.addEventListener("click", async () => {
   submitBtn.textContent = "Submitting...";
 
   try {
-    await app.callServerTool({
+    const result = await app.callServerTool({
       name: "submit_feedback",
       arguments: { text },
     });
+    const sc = result?.structuredContent as Record<string, unknown> | undefined;
+    if (sc?.success === true) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Success";
+      submitBtn.classList.add("btn-success");
+      feedbackInput.disabled = true;
+    } else {
+      showStatus("No pending feedback session", "warning");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Submit Feedback";
+    }
   } catch (_e) {
     showStatus("Failed to submit feedback", "error");
     submitBtn.disabled = false;

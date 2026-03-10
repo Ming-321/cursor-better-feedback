@@ -12,7 +12,7 @@ async function startStreamableHTTPServer(): Promise<void> {
   const port = parseInt(process.env.PORT ?? "3001", 10);
   const sharedState = new FeedbackState();
 
-  const app = createMcpExpressApp({ host: "0.0.0.0" });
+  const app = createMcpExpressApp({ host: "127.0.0.1" });
   app.use(cors());
 
   app.all("/mcp", async (req: Request, res: Response) => {
@@ -60,10 +60,10 @@ async function startStdioServer(): Promise<void> {
 }
 
 async function main() {
-  if (process.argv.includes("--stdio")) {
-    await startStdioServer();
-  } else {
+  if (process.argv.includes("--http")) {
     await startStreamableHTTPServer();
+  } else {
+    await startStdioServer();
   }
 }
 
