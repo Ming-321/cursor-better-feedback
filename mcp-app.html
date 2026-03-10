@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>Feedback</title>
+</head>
+<body>
+  <main class="main" id="main">
+    <section class="message-area" id="message-area">
+      <p id="ai-message">Waiting for message...</p>
+    </section>
+    <section class="feedback-area">
+      <textarea id="feedback-input" placeholder="Enter your feedback..." rows="4"></textarea>
+      <button id="submit-btn" type="button">Submit Feedback</button>
+    </section>
+    <div class="status-area" id="status-area" hidden>
+      <p id="status-text"></p>
+    </div>
+  </main>
+  <script type="module" src="/src/mcp-app.ts"></script>
+</body>
+</html>

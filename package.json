@@ -1,0 +1,40 @@
+{
+  "name": "cursor-better-feedback",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "MCP feedback tool with interactive UI for Cursor",
+  "main": "dist/server.js",
+  "bin": {
+    "cursor-better-feedback": "dist/main.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc --noEmit && cross-env INPUT=mcp-app.html vite build && tsc -p tsconfig.server.json",
+    "serve": "npx tsx main.ts",
+    "serve:stdio": "npx tsx main.ts --stdio",
+    "dev": "cross-env NODE_ENV=development concurrently \"cross-env INPUT=mcp-app.html vite build --watch\" \"npx tsx --watch main.ts\""
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.24.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "marked": "^17.0.4",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.0",
+    "@types/marked": "^5.0.2",
+    "@types/node": "22.10.0",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.9.3",
+    "vite": "^6.0.0",
+    "vite-plugin-singlefile": "^2.3.0"
+  },
+  "license": "MIT"
+}
